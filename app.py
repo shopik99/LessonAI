@@ -1,4 +1,3 @@
-# app.py
 import streamlit as st
 from pptx import Presentation
 from openai import OpenAI
@@ -6,30 +5,28 @@ from openai import OpenAI
 st.set_page_config(page_title="AI Сабақ жоспары генераторы", layout="wide")
 st.title("AI Сабақ жоспары генераторы")
 
-# --- Streamlit форма ---
 subject = st.text_input("Пән")
 topic = st.text_input("Сабақ тақырыбы")
 group = st.text_input("Группа")
 
-# --- OpenAI клиенті ---
-client = OpenAI()  # API key жүйеде орнатылған болуы керек
+# Streamlit Secrets арқылы API кілтін қолдану
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-# --- AI арқылы слайд мәтінін генерациялау ---
+# --- AI арқылы слайд мәтінін генерациялау (бір сұрауда 6-8 слайд) ---
 def generate_slide_text(topic, subject):
     prompt = f"""
     Сабақ тақырыбы: {topic}
     Пән: {subject}
-    
-    6–8 слайдқа арналған мазмұн дайында. 
-    Әр слайдта қысқаша мәтін: 
-    - Тақырып атауы
-    - Түсіндіру мәтіні
-    Мәтін қазақша болсын.
-    """
 
+    6 слайдқа арналған мазмұн жаса. 
+    Әр слайд:
+    - Тақырып атауы
+    - Қысқаша түсіндіру
+    Мәтін қазақша болсын, барлығы бір жауапта.
+    """
     response = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}]
+        messages=[{"role":"user", "content": prompt}]
     )
     return response.choices[0].message.content
 
@@ -54,7 +51,11 @@ if st.button("AI арқылы презентация жасау"):
         st.warning("Пән мен сабақ тақырыбын енгізіңіз!")
     else:
         with st.spinner("AI слайд мәтінін жасай жатыр..."):
-            slide_text = generate_slide_text(topic, subject)
+            try:
+                slide_text = generate_slide_text(topic, subject)
+            except Exception as e:
+                st.error(f"AI шақыруда қате болды: {e}")
+                st.stop()
 
         st.subheader("Слайд мәтіні (тексеру үшін)")
         st.text_area("Слайд мәтінін қарап шығыңыз", slide_text, height=300)
