@@ -6,32 +6,34 @@ API_KEY = st.secrets["GEMINI_API_KEY"]
 client = genai.Client(api_key=API_KEY)
 
 # ====== Streamlit интерфейсі ======
-st.set_page_config(page_title="Gemini Chat", page_icon="🤖")
-st.title("🤖 Google Gemini Chat")
+st.set_page_config(page_title="Pourochny Plan Chat", page_icon="📚")
+st.title("📚 Поурочный жоспар генераторы")
 
-# Чат тарихын сақтау
+# Чат тарихы
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Пайдаланушыдан сұрақ алу
-user_input = st.text_input("Сұрағыңызды енгізіңіз:")
+# Пән атауы мен сабақ тақырыбы
+subject = st.text_input("Пән атауы:")
+topic = st.text_input("Сабақ тақырыбы:")
 
-if st.button("Жіберу") and user_input:
+if st.button("Жоспар жасау") and subject and topic:
     # Пайдаланушы хабарын сақтау
-    st.session_state.messages.append({"role": "user", "content": user_input})
+    user_prompt = f"Маған '{subject}' пәні бойынша '{topic}' тақырыбына арналған поурочный сабақ жоспарын жаса, әр кезеңді сипаттап, тапсырмаларды көрсет."
+    st.session_state.messages.append({"role": "user", "content": user_prompt})
 
     # Gemini API шақыру
     try:
         response = client.models.generate_content(
-            model="gemini-2.5-flash",  # қолжетімді модель
-            contents=user_input
+            model="gemini-2.5-flash",
+            contents=user_prompt
         )
-        gemini_reply = response.text
+        plan_text = response.text
     except Exception as e:
-        gemini_reply = f"Қате шықты: {e}"
+        plan_text = f"Қате шықты: {e}"
 
     # API жауабын сақтау
-    st.session_state.messages.append({"role": "assistant", "content": gemini_reply})
+    st.session_state.messages.append({"role": "assistant", "content": plan_text})
 
 # Чат тарихын көрсету
 for msg in st.session_state.messages:
