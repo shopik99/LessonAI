@@ -1,3 +1,19 @@
+
+import streamlit as st
+
+st.title("AI Сабақ жоспары генераторы")
+
+subject = st.text_input("Пән")
+topic = st.text_input("Сабақ тақырыбы")
+group = st.text_input("Группа")
+
+if st.button("Gamma арқылы презентация жасау"):
+    
+    gamma_url = "https://gamma.app"
+
+    st.success("Gamma ашылады, сол жерде презентация жасауға болады")
+
+    st.link_button("Gamma ашу", gamma_url)
 import streamlit as st
 from pptx import Presentation
 
