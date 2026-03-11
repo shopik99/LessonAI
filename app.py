@@ -1,4 +1,3 @@
-
 import streamlit as st
 import requests
 import json
@@ -14,11 +13,11 @@ CLIENT_SECRET = st.secrets["CANVA_CLIENT_SECRET"]
 topic = st.text_input("Презентация тақырыбы:")
 
 # OAuth Access Token (кейде алдын ала алу қажет, немесе Embed әдісі)
+access_token = st.text_input("Canva Access Token:", type="password")
 
-
-if st.button("Презентация жасау"):
+if st.button("Презентация жасау") and topic and access_token:
     headers = {
-        
+        "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json"
     }
 
