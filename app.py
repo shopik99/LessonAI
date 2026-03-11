@@ -5,39 +5,41 @@ from google import genai
 API_KEY = st.secrets["GEMINI_API_KEY"]
 client = genai.Client(api_key=API_KEY)
 
-# ====== Streamlit интерфейсі ======
-st.set_page_config(page_title="Pourochny Plan Chat", page_icon="📚")
-st.title("📚 Поурочный жоспар генераторы")
+st.set_page_config(page_title="Презентация генераторы", page_icon="🖼️")
+st.title("🖼️ Презентация генераторы (GPT/Gemini)")
 
 # Чат тарихы
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+if "slides" not in st.session_state:
+    st.session_state.slides = []
 
-# Пән атауы мен сабақ тақырыбы
+# Пән және сабақ тақырыбы
 subject = st.text_input("Пән атауы:")
 topic = st.text_input("Сабақ тақырыбы:")
 
-if st.button("Жоспар жасау") and subject and topic:
-    # Пайдаланушы хабарын сақтау
-    user_prompt = f"Маған '{subject}' пәні бойынша '{topic}' тақырыбына арналған поурочный сабақ жоспарын жаса, әр кезеңді сипаттап, тапсырмаларды көрсет."
-    st.session_state.messages.append({"role": "user", "content": user_prompt})
+num_slides = st.number_input("Слайд саны:", min_value=3, max_value=10, value=5, step=1)
+
+if st.button("Презентация жасау") and subject and topic:
+    # Пайдаланушы сұранысын сақтау
+    prompt = f"Маған '{subject}' пәні бойынша '{topic}' тақырыбында {num_slides} слайдтық презентация жаса. Әр слайдқа қысқаша тақырып пен сипаттама бер."
+    st.session_state.slides.append({"role": "user", "content": prompt})
 
     # Gemini API шақыру
     try:
         response = client.models.generate_content(
             model="gemini-2.5-flash",
-            contents=user_prompt
+            contents=prompt
         )
-        plan_text = response.text
+        slides_text = response.text
     except Exception as e:
-        plan_text = f"Қате шықты: {e}"
+        slides_text = f"Қате шықты: {e}"
 
-    # API жауабын сақтау
-    st.session_state.messages.append({"role": "assistant", "content": plan_text})
+    st.session_state.slides.append({"role": "assistant", "content": slides_text})
 
-# Чат тарихын көрсету
-for msg in st.session_state.messages:
-    if msg["role"] == "user":
-        st.markdown(f"**Сіз:** {msg['content']}")
-    else:
-        st.markdown(f"**Gemini:** {msg['content']}")
+# Слайдтарды көрсету
+for msg in st.session_state.slides:
+    if msg["role"] == "assistant":
+        st.markdown("### 📑 Генерацияланған презентация мазмұны")
+        # Слайдтарды жол бойынша бөліп көрсету
+        for line in msg["content"].split("\n"):
+            if line.strip():
+                st.markdown(f"- {line.strip()}")
