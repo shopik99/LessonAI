@@ -5,17 +5,17 @@ import json
 st.set_page_config(page_title="Canva презентация генератор", page_icon="🎓")
 st.title("🎓 Canva арқылы презентация генератор")
 
-# Secrets‑тен Client ID / Secret алу
-CLIENT_ID = st.secrets["CANVA_CLIENT_ID"]
-CLIENT_SECRET = st.secrets["CANVA_CLIENT_SECRET"]
-REDIRECT_URI = st.secrets.get("CANVA_REDIRECT_URI", "https://shopikai.streamlit.app/oauth_callback")
-
 st.markdown("""
 **Қалай жұмыс істейді:**  
 1️⃣ Canva Developer Portal‑дан Client ID / Client Secret және Access Token алыңыз  
 2️⃣ Тақырып енгізіңіз  
 3️⃣ “Презентация жасау” батырмасын басыңыз
 """)
+
+# Secrets‑тен Client ID / Secret алу
+CLIENT_ID = st.secrets["CANVA_CLIENT_ID"]
+CLIENT_SECRET = st.secrets["CANVA_CLIENT_SECRET"]
+REDIRECT_URI = st.secrets.get("CANVA_REDIRECT_URI", "https://shopikai.streamlit.app/oauth_callback")
 
 # Пайдаланушыдан тақырып енгізу
 topic = st.text_input("Презентация тақырыбы:")
@@ -42,10 +42,10 @@ if st.button("Презентация жасау") and topic and access_token:
         design_id = resp.json().get("id")
         st.success(f"Жаңа презентация жасалды! Design ID: {design_id}")
 
-        # 2️⃣ Экспорт жасау
+        # 2️⃣ Экспорт жасау (PDF немесе PPTX)
         export_url = f"https://api.canva.com/v1/designs/{design_id}/export"
         export_data = {
-            "format": "pdf"  # немесе "pptx"
+            "format": "pdf"  # pptx болса оны да жазуға болады
         }
 
         export_resp = requests.post(export_url, headers=headers, data=json.dumps(export_data))
