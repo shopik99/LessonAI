@@ -1,72 +1,41 @@
 import streamlit as st
-from pptx import Presentation
-from openai import OpenAI
+from google import genai
 
-st.set_page_config(page_title="AI Сабақ жоспары генераторы", layout="wide")
-st.title("AI Сабақ жоспары генераторы")
+# ====== Secrets.toml арқылы API кілтін алу ======
+API_KEY = st.secrets["GEMINI_API_KEY"]
+client = genai.Client(api_key=API_KEY)
 
-subject = st.text_input("Пән")
-topic = st.text_input("Сабақ тақырыбы")
-group = st.text_input("Группа")
+# ====== Streamlit интерфейсі ======
+st.set_page_config(page_title="Gemini Chat", page_icon="🤖")
+st.title("🤖 Google Gemini Chat")
 
-# Streamlit Secrets арқылы API кілтін қолдану
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+# Чат тарихын сақтау
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-# --- AI арқылы слайд мәтінін генерациялау (бір сұрауда 6-8 слайд) ---
-def generate_slide_text(topic, subject):
-    prompt = f"""
-    Сабақ тақырыбы: {topic}
-    Пән: {subject}
+# Пайдаланушыдан сұрақ алу
+user_input = st.text_input("Сұрағыңызды енгізіңіз:")
 
-    6 слайдқа арналған мазмұн жаса. 
-    Әр слайд:
-    - Тақырып атауы
-    - Қысқаша түсіндіру
-    Мәтін қазақша болсын, барлығы бір жауапта.
-    """
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role":"user", "content": prompt}]
-    )
-    return response.choices[0].message.content
+if st.button("Жіберу") and user_input:
+    # Пайдаланушы хабарын сақтау
+    st.session_state.messages.append({"role": "user", "content": user_input})
 
-# --- Презентация жасау функциясы ---
-def create_ppt(topic, subject, slide_text):
-    prs = Presentation()
-    slides = slide_text.split("\n\n")  # әр жаңа параграф = жаңа слайд
+    # Gemini API шақыру
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",  # қолжетімді модель
+            contents=user_input
+        )
+        gemini_reply = response.text
+    except Exception as e:
+        gemini_reply = f"Қате шықты: {e}"
 
-    for s in slides:
-        slide_layout = prs.slide_layouts[1]
-        slide = prs.slides.add_slide(slide_layout)
-        lines = s.split("\n")
-        slide.shapes.title.text = lines[0] if len(lines) > 0 else "Слайд"
-        slide.placeholders[1].text = "\n".join(lines[1:]) if len(lines) > 1 else ""
+    # API жауабын сақтау
+    st.session_state.messages.append({"role": "assistant", "content": gemini_reply})
 
-    prs.save("lesson.pptx")
-    return "lesson.pptx"
-
-# --- Батырма басылғанда ---
-if st.button("AI арқылы презентация жасау"):
-    if not subject or not topic:
-        st.warning("Пән мен сабақ тақырыбын енгізіңіз!")
+# Чат тарихын көрсету
+for msg in st.session_state.messages:
+    if msg["role"] == "user":
+        st.markdown(f"**Сіз:** {msg['content']}")
     else:
-        with st.spinner("AI слайд мәтінін жасай жатыр..."):
-            try:
-                slide_text = generate_slide_text(topic, subject)
-            except Exception as e:
-                st.error(f"AI шақыруда қате болды: {e}")
-                st.stop()
-
-        st.subheader("Слайд мәтіні (тексеру үшін)")
-        st.text_area("Слайд мәтінін қарап шығыңыз", slide_text, height=300)
-
-        ppt_file = create_ppt(topic, subject, slide_text)
-
-        st.success("Презентация дайын!")
-        with open(ppt_file, "rb") as f:
-            st.download_button(
-                "Презентация жүктеу",
-                f,
-                file_name="lesson.pptx",
-                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
-            )
+        st.markdown(f"**Gemini:** {msg['content']}")
