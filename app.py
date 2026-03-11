@@ -5,21 +5,27 @@ from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
 from io import BytesIO
 import requests
+from pptx.enum.text import PP_ALIGN
 
 # ====== Secrets.toml арқылы API кілтін алу ======
 API_KEY = st.secrets["GEMINI_API_KEY"]
 client = genai.Client(api_key=API_KEY)
 
-st.set_page_config(page_title="Стильді Презентация", page_icon="🎨")
-st.title("🎨 GPT/Gemini стилді презентация генераторы")
+st.set_page_config(page_title="Толық презентация генератор", page_icon="🎓")
+st.title("🎓 Толық теориялық презентация генераторы")
 
 # Пайдаланушыдан пән, тақырып және слайд саны
 subject = st.text_input("Пән атауы:")
 topic = st.text_input("Сабақ тақырыбы:")
 num_slides = st.number_input("Слайд саны:", min_value=3, max_value=10, value=5, step=1)
 
-if st.button("Стильді презентация жасау") and subject and topic:
-    prompt = f"Маған '{subject}' пәні бойынша '{topic}' тақырыбында {num_slides} слайдтық презентация жасаңдар. Әр слайдқа тақырып пен мәтін беріңдер, қазақша, қысқа әрі түсінікті, әр слайд бөлек жолда."
+if st.button("Презентация жасау") and subject and topic:
+    prompt = f"""Маған '{subject}' пәні бойынша '{topic}' тақырыбында {num_slides} слайдтық презентация жаса. 
+    Әр слайдқа:
+    1) тақырып (қазақша)
+    2) теориялық мәтін
+    3) негізгі пункттер (bullet)
+    Қысқа әрі түсінікті болсын, әр слайд бөлек жолға шығсын."""
 
     try:
         response = client.models.generate_content(
@@ -33,9 +39,7 @@ if st.button("Стильді презентация жасау") and subject and
 
     if slides_text:
         prs = Presentation()
-
-        # Автоматты фон түсі мен суреттерді пайдалану үшін кейбір үлгілер
-        background_colors = [(255, 230, 230), (230, 255, 230), (230, 230, 255), (255, 255, 230)]
+        background_colors = [(240, 248, 255), (255, 248, 220), (245, 255, 250), (255, 240, 245)]
         sample_images = [
             "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/School_books.jpg/320px-School_books.jpg",
             "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Blackboard.jpg/320px-Blackboard.jpg"
@@ -47,7 +51,7 @@ if st.button("Стильді презентация жасау") and subject and
             if not slide_line:
                 continue
 
-            # Әдетте: "Слайд 1: Тақырып – Мәтін" форматында келеді
+            # Слайд тақырыбы + мәтінді бөліп алу
             if ":" in slide_line:
                 parts = slide_line.split(":", 1)
                 slide_title = parts[0].strip()
@@ -56,24 +60,33 @@ if st.button("Стильді презентация жасау") and subject and
                 slide_title = slide_line
                 slide_content = ""
 
-            # Слайд қосу
             slide = prs.slides.add_slide(prs.slide_layouts[1])
             slide.shapes.title.text = slide_title
-            slide.placeholders[1].text = slide_content
 
-            # Фон түсін орнату
+            # Фон түсі
             fill = slide.background.fill
             color = background_colors[slide_index % len(background_colors)]
             fill.solid()
             fill.fore_color.rgb = RGBColor(*color)
 
+            # Мәтінді бірнеше paragraph-қа бөлу
+            textbox = slide.placeholders[1]
+            textbox.text = ""
+            for bullet in slide_content.split(". "):
+                p = textbox.text_frame.add_paragraph()
+                p.text = bullet.strip()
+                p.level = 0
+                p.font.size = Pt(18)
+                p.font.color.rgb = RGBColor(0,0,0)
+                p.alignment = PP_ALIGN.LEFT
+
             # Сурет қосу
             img_url = sample_images[slide_index % len(sample_images)]
             try:
                 img_data = requests.get(img_url).content
-                slide.shapes.add_picture(BytesIO(img_data), Inches(5), Inches(1.5), width=Inches(3))
+                slide.shapes.add_picture(BytesIO(img_data), Inches(5.5), Inches(1.5), width=Inches(3))
             except:
-                pass  # сурет жүктелмесе өткізіледі
+                pass
 
             slide_index += 1
 
@@ -82,8 +95,7 @@ if st.button("Стильді презентация жасау") and subject and
         prs.save(pptx_bytes)
         pptx_bytes.seek(0)
 
-        # Жүктеу батырмасы
-        st.success("🎉 Стильді презентация дайын!")
+        st.success("🎉 Презентация дайын!")
         st.download_button(
             label="📥 PPTX жүктеу",
             data=pptx_bytes,
