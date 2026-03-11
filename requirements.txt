@@ -3,4 +3,3 @@ openai
 python-pptx
 google-genai
 requests
-json
