@@ -1,23 +1,4 @@
-import streamlit as st
-import requests
 
-CLIENT_ID = st.secrets["CANVA_CLIENT_ID"]
-CLIENT_SECRET = st.secrets["CANVA_CLIENT_SECRET"]
-REDIRECT_URI = "https://shopikai.streamlit.app/oauth_callback"
-AUTH_CODE = "браузерден келген code"
-
-token_url = "https://api.canva.com/token"
-data = {
-    "grant_type": "authorization_code",
-    "client_id": CLIENT_ID,
-    "client_secret": CLIENT_SECRET,
-    "redirect_uri": REDIRECT_URI,
-    "code": AUTH_CODE
-}
-
-response = requests.post(token_url, data=data)
-access_token = response.json().get("access_token")
-print("Canva Access Token:", access_token)
 import streamlit as st
 import requests
 import json
@@ -33,11 +14,11 @@ CLIENT_SECRET = st.secrets["CANVA_CLIENT_SECRET"]
 topic = st.text_input("Презентация тақырыбы:")
 
 # OAuth Access Token (кейде алдын ала алу қажет, немесе Embed әдісі)
-access_token = st.text_input("Canva Access Token:", type="password")
 
-if st.button("Презентация жасау") and topic and access_token:
+
+if st.button("Презентация жасау"):
     headers = {
-        "Authorization": f"Bearer {access_token}",
+        
         "Content-Type": "application/json"
     }
 
